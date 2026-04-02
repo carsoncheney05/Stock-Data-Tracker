@@ -3,37 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Porfolio Tracker</title>
+    <title>Stock Portfolio Tracker</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
     <h1>Stock Portfolio Tracker</h1>
 
-    <sections class="summary">
+    <section class="summary">
         <div class ="summary-card">
             <h2>Total Invested</h2>
             <p id="total-value">$0.00</p>
         </div>
         <div class ="summary-card">
-            <h3>Total Current Value</h3>
-            <p id="total-current-value">$0.00</p>`
+            <h2>Total Current Value</h2>
+            <p id="total-current-value">$0.00</p>
+        </div>
+
         <div class ="summary-card">
-            <h3>Total Gain/Loss</h3>
+            <h2>Total Gain/Loss</h2>
             <p id="total-gain-loss">$0.00</p>
         </div>
-    </sections>
+    </section>
 
-    <sections class="form-section">
+    
+
+    <section class="form-section">
         <h2>Add Stock</h2>
         <form id="stock-form">
-            <input type="text" id="ticker" placeholder="Ticker Symbol (e.g. AAPL)" required>
-            <input type="number" id="shares" placeholder="Shares" step="0.01" required>
-            <input type="number" id="buy-price" placeholder="Buy Price" step="0.01" required>
-            <input type="date" id="purchase-date" required>
+
+            <div class="search-wrapper">
+                <input type="text" id="stock-search" placeholder="Search company or stock (Apple, Tesla, Microsoft)" />
+                <div id="search-results" class="search-results"></div>
+            </div>
+
+            <input type="text" id="ticker" placeholder="Ticker Symbol" required />
+            <input type="number" id="shares" placeholder="Shares" step="0.01" required />
+            <input type="number" id="buy-price" placeholder="Buy Price" step="0.01" required />
+            <input type="date" id="purchase-date" required />
             <button type="submit">Add Purchase</button>
         </form>
-    </sections>
+    </section>
 
     <section class="table-section">
         <h2>Portfolio</h2>

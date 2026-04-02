@@ -14,6 +14,49 @@ h1, h2 {
     margin-bottom: 15px;
 }
 
+.search-wrapper {
+    position: relative;
+    grid-column: span 2;
+}
+
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    margin-top: 4px;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 10;
+    display: none;
+}
+
+.search-results-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.search-results-item:last-child {
+    border-bottom: none;
+}
+
+.search-results-item:hover {
+    background-color: #f3f4f6;
+}
+
+.search-name {
+    font-weight: bold;
+}
+
+.search-meta {
+    font-size: 12px;
+    color: #666;
+}
+
 .summary {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
