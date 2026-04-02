@@ -1,0 +1,98 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f6f8;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+h1, h2 {
+    margin-bottom: 15px;
+}
+
+.summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.summary-card,
+.form-section,
+.table-section {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.form-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.summary-card p {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+form {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+form button {
+    grid-column: span 2;
+}
+
+input,
+button {
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 8px;
+}
+
+button {
+    background-color: black;
+    color: white;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    display: block;
+    border-radius: 8px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+}
+
+@media (max-width: 900px) {
+    .summary {
+        grid-template-columns: 1fr;
+    }
+
+    form {
+        grid-template-columns: 1fr;
+    }
+
+    form button {
+        grid-column: span 1;
+    }
+
+    table {
+        display: block;
+        overflow-x: auto;
+    }
+}
