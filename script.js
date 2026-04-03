@@ -7,7 +7,8 @@ const buyPriceInput = document.getElementById('buy-price');
 const purchaseDateInput = document.getElementById('purchase-date');
 const holdingsBody = document.getElementById('holdings-body');
 
-
+let stockPriceChart;
+let portfolioChart;
 let searchTimeout;
 let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
 
@@ -48,6 +49,73 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
         }
     }
 
+    async function getChartData(symbol) {
+        try {
+        const response = await fetch(`/api/chart?symbol=${encodeURIComponent(symbol)}`);
+        const data = await response.json();
+        return data;
+        } catch (error) {
+        console.error("Chart error:", error);
+        return null;
+        }
+    }
+
+    function renderStockPriceChart(symbol, chartData) {
+        const ctx = document.getElementById('stock-price-chart');
+
+        if (stockPriceChart) {
+            stockPriceChart.destroy();
+        }
+
+        if (!chartData || chartData.s !== "ok" || !chartData.c || !chartData.t) {
+            stockPriceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['No data'],
+                    datasets: [{
+                        label: `${symbol} Price`,
+                        data: [0]
+                    }]
+                }
+            });
+            return;
+        }
+
+        const labels = chartData.t.map((timestamp) => {
+            const date = new Date(timestamp * 1000);
+            return `${date.getMonth() + 1}/${date.getDate()}`;
+        });
+
+        const prices = chartData.c;
+
+        stockPriceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: `${symbol} Price`,
+                    data: prices,
+                    tension: 0.2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: true
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            maxTicksLimit: 8
+                        }
+                    }
+                }
+            }
+        });
+    }
+
     function renderSearchResults(results) {
         searchResults.innerHTML = "";
 
@@ -65,19 +133,55 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
                 <div class="search-meta">${stock.symbol}</div>
             `;
 
-            item.addEventListener('click', () => {
-                tickerInput.value = stock.symbol;
-                stockSearchInput.value = stock.description || stock.displaySymbol;
-                searchResults.innerHTML = "";
-                searchResults.style.display = "none";
-            });
+    item.addEventListener('click', async () => {
+        tickerInput.value = stock.symbol;
+        stockSearchInput.value = stock.description || stock.displaySymbol;
+        searchResults.innerHTML = "";
+        searchResults.style.display = "none";
+
+        const chartData = await getChartData(stock.symbol);
+        renderStockPriceChart(stock.symbol, chartData);
+    });
 
             searchResults.appendChild(item);
         });
 
         searchResults.style.display = "block";
     }
-            
+        
+    function renderPortfolioChart(allocationMap) {
+        const ctx = document.getElementById('portfolio-chart');
+
+        if (portfolioChart) {
+            portfolioChart.destroy();
+        }
+
+        const labels = Object.keys(allocationMap);
+        const values = Object.values(allocationMap);
+
+        if (labels.length === 0) {
+            return;
+        }
+
+        portfolioChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Portfolio Allocation',
+                    data: values
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
 
     stockform.addEventListener('submit', function(event) {
         event.preventDefault(); 
@@ -104,6 +208,7 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
     async function renderHoldings() {
         holdingsBody.innerHTML = '';
 
+        let allocationMap = {};
         let totalInvested = 0;
         let totalCurrentValue = 0;
         let totalGainLoss = 0;
@@ -124,6 +229,13 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
                 currentPrice = quote.c;
                 currentValue = holding.shares * currentPrice;
                 gainLoss = currentValue - invested;
+            }
+
+            if (currentValue > 0) {
+                if (!allocationMap[holding.ticker]) {
+                    allocationMap[holding.ticker] = 0;
+                }
+                allocationMap[holding.ticker] += currentValue;
             }
 
             totalCurrentValue += currentValue;
@@ -149,6 +261,7 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
         document.getElementById('total-value').textContent = `$${totalInvested.toFixed(2)}`;
         document.getElementById('total-current-value').textContent = `$${totalCurrentValue.toFixed(2)}`;
         document.getElementById('total-gain-loss').textContent = `$${totalGainLoss.toFixed(2)}`;
+        renderPortfolioChart(allocationMap);
     }
 
     function deleteHolding(id) {
