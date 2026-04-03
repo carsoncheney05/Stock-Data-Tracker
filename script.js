@@ -101,25 +101,54 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
         localStorage.setItem('holdings', JSON.stringify(holdings));
     }
 
-    function renderHoldings() {
+    async function renderHoldings() {
         holdingsBody.innerHTML = '';
-        
-        holdings.forEach((holding) => {
+
+        let totalInvested = 0;
+        let totalCurrentValue = 0;
+        let totalGainLoss = 0;
+
+        for (const holding of holdings) {
             const row = document.createElement('tr');
+
+            const invested = holding.shares * holding.buyPrice;
+            totalInvested += invested;
+
+            const quote = await getQuote(holding.ticker);
+
+            let currentPrice = 0;
+            let currentValue = 0;
+            let gainLoss = 0;
+
+            if (quote && quote.c) {
+                currentPrice = quote.c;
+                currentValue = holding.shares * currentPrice;
+                gainLoss = currentValue - invested;
+            }
+
+            totalCurrentValue += currentValue;
+            totalGainLoss += gainLoss;
 
             row.innerHTML = `
                 <td>${holding.ticker}</td>
                 <td>${holding.shares}</td>
-                <td>${holding.buyPrice.toFixed(2)}</td>
-                <td>${(holding.shares * holding.buyPrice).toFixed(2)}</td>
-                <td>--</td>
-                <td>--</td>
+                <td>$${holding.buyPrice.toFixed(2)}</td>
+                <td>${currentPrice ? `$${currentPrice.toFixed(2)}` : '--'}</td>
+                <td>$${invested.toFixed(2)}</td>
+                <td>${currentValue ? `$${currentValue.toFixed(2)}` : '--'}</td>
+                <td style="color: ${gainLoss >= 0 ? 'green' : 'red'};">
+                    ${currentPrice ? `$${gainLoss.toFixed(2)}` : '--'}
+                </td>
                 <td>${holding.purchaseDate}</td>
                 <td><button onclick="deleteHolding(${holding.id})">Delete</button></td>
             `;
 
             holdingsBody.appendChild(row);
-        });
+        }
+
+        document.getElementById('total-value').textContent = `$${totalInvested.toFixed(2)}`;
+        document.getElementById('total-current-value').textContent = `$${totalCurrentValue.toFixed(2)}`;
+        document.getElementById('total-gain-loss').textContent = `$${totalGainLoss.toFixed(2)}`;
     }
 
     function deleteHolding(id) {

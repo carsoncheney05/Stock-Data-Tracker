@@ -34,17 +34,17 @@ h1, h2 {
     display: none;
 }
 
-.search-results-item {
+.search-result-item {
     padding: 10px 12px;
     cursor: pointer;
     border-bottom: 1px solid #eee;
 }
 
-.search-results-item:last-child {
+.search-result-item:last-child {
     border-bottom: none;
 }
 
-.search-results-item:hover {
+.search-result-item:hover {
     background-color: #f3f4f6;
 }
 

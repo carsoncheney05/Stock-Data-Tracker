@@ -5,6 +5,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing stock symbol" });
   }
 
+  if (!process.env.FINNHUB_API_KEY) {
+    return res.status(500).json({ error: "Missing FINNHUB_API_KEY on server" });
+  }
+
   try {
     const response = await fetch(
       `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}&token=${process.env.FINNHUB_API_KEY}`
