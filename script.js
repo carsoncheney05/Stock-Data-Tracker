@@ -49,18 +49,20 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
         }
     }
 
-    async function getChartData(symbol) {
+    async function getChartData(symbol, purchaseDate) {
         try {
-        const response = await fetch(`/api/chart?symbol=${encodeURIComponent(symbol)}`);
-        const data = await response.json();
-        return data;
+            const response = await fetch(
+                `/api/chart?symbol=${encodeURIComponent(symbol)}&purchaseDate=${encodeURIComponent(purchaseDate)}`
+            );
+            const data = await response.json();
+            return data;
         } catch (error) {
-        console.error("Chart error:", error);
-        return null;
+            console.error("Chart error:", error);
+            return null;
         }
     }
 
-    function renderStockPriceChart(symbol, chartData) {
+    function renderStockPriceChart(symbol, purchaseDate, chartData) {
         const ctx = document.getElementById('stock-price-chart');
 
         if (stockPriceChart) {
@@ -73,7 +75,7 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
                 data: {
                     labels: ['No data'],
                     datasets: [{
-                        label: `${symbol} Price`,
+                        label: `${symbol} Price Since ${purchaseDate}`,
                         data: [0]
                     }]
                 }
@@ -83,7 +85,7 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
 
         const labels = chartData.t.map((timestamp) => {
             const date = new Date(timestamp * 1000);
-            return `${date.getMonth() + 1}/${date.getDate()}`;
+            return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
         });
 
         const prices = chartData.c;
@@ -93,7 +95,7 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
             data: {
                 labels,
                 datasets: [{
-                    label: `${symbol} Price`,
+                    label: `${symbol} Price Since ${purchaseDate}`,
                     data: prices,
                     tension: 0.2
                 }]
@@ -108,7 +110,7 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
                 scales: {
                     x: {
                         ticks: {
-                            maxTicksLimit: 8
+                            maxTicksLimit: 10
                         }
                     }
                 }
@@ -133,14 +135,11 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
                 <div class="search-meta">${stock.symbol}</div>
             `;
 
-    item.addEventListener('click', async () => {
+    item.addEventListener('click', () => {
         tickerInput.value = stock.symbol;
         stockSearchInput.value = stock.description || stock.displaySymbol;
         searchResults.innerHTML = "";
         searchResults.style.display = "none";
-
-        const chartData = await getChartData(stock.symbol);
-        renderStockPriceChart(stock.symbol, chartData);
     });
 
             searchResults.appendChild(item);
@@ -148,6 +147,21 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
 
         searchResults.style.display = "block";
     }
+
+    async function updateSelectedStockChart() {
+        const symbol = tickerInput.value.trim().toUpperCase();
+        const purchaseDate = purchaseDateInput.value;
+
+        if (!symbol || !purchaseDate) {
+            return;
+        }
+
+        const chartData = await getChartData(symbol, purchaseDate);
+        renderStockPriceChart(symbol, purchaseDate, chartData);
+    }
+
+    tickerInput.addEventListener('change', updateSelectedStockChart);
+    purchaseDateInput.addEventListener('change', updateSelectedStockChart);
         
     function renderPortfolioChart(allocationMap) {
         const ctx = document.getElementById('portfolio-chart');
@@ -252,7 +266,9 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
                     ${currentPrice ? `$${gainLoss.toFixed(2)}` : '--'}
                 </td>
                 <td>${holding.purchaseDate}</td>
-                <td><button onclick="deleteHolding(${holding.id})">Delete</button></td>
+                <td><button onclick="showChart('${holding.ticker}', '${holding.purchaseDate}')">View</button>
+                    <button onclick="deleteHolding(${holding.id})">Delete</button>
+                </td>
             `;
 
             holdingsBody.appendChild(row);
@@ -262,6 +278,11 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
         document.getElementById('total-current-value').textContent = `$${totalCurrentValue.toFixed(2)}`;
         document.getElementById('total-gain-loss').textContent = `$${totalGainLoss.toFixed(2)}`;
         renderPortfolioChart(allocationMap);
+    }
+
+    async function showChart(symbol, purchaseDate) {
+        const chartData = await getChartData(symbol, purchaseDate);
+        renderStockPriceChart(symbol, purchaseDate, chartData);
     }
 
     function deleteHolding(id) {
