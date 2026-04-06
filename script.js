@@ -69,7 +69,7 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
             stockPriceChart.destroy();
         }
 
-        if (!chartData || chartData.s !== "ok" || !chartData.c || !chartData.t) {
+        if (!chartData || !chartData.c || !chartData.t || chartData.c.length === 0) {
             stockPriceChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -158,6 +158,8 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
 
         const chartData = await getChartData(symbol, purchaseDate);
         renderStockPriceChart(symbol, purchaseDate, chartData);
+
+        console.log(chartData)
     }
 
     tickerInput.addEventListener('change', updateSelectedStockChart);
