@@ -17,15 +17,36 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
+    if (data.Note) {
+      return res.status(200).json({ error: data.Note });
+    }
+
+    if (data["Error Message"]) {
+      return res.status(200).json({ error: data["Error Message"] });
+    }
+
     const series = data["Time Series (Daily)"];
+
     if (!series) {
       return res.status(200).json({ s: "no_data", c: [], t: [] });
     }
 
-    const from = new Date(purchaseDate);
-    const entries = Object.entries(series)
-      .filter(([date]) => new Date(date) >= from)
+    const fromDate = new Date(purchaseDate);
+    fromDate.setHours(0, 0, 0, 0);
+
+    let entries = Object.entries(series)
+      .filter(([date]) => {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        return d >= fromDate;
+      })
       .sort((a, b) => new Date(a[0]) - new Date(b[0]));
+
+    if (entries.length === 0) {
+      entries = Object.entries(series)
+        .sort((a, b) => new Date(a[0]) - new Date(b[0]))
+        .slice(-30);
+    }
 
     const c = entries.map(([, values]) => Number(values["4. close"]));
     const t = entries.map(([date]) => Math.floor(new Date(date).getTime() / 1000));
