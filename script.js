@@ -75,7 +75,7 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
                 data: {
                     labels: ['No data'],
                     datasets: [{
-                        label: `${symbol} Price Since ${purchaseDate}`,
+                        label: `${symbol} Last 30 Days`,
                         data: [0]
                     }]
                 }
@@ -95,7 +95,7 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
             data: {
                 labels,
                 datasets: [{
-                    label: `${symbol} Price Since ${purchaseDate}`,
+                    label: `${symbol} Last 30 Days`,
                     data: prices,
                     tension: 0.2
                 }]
@@ -150,16 +150,15 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
 
     async function updateSelectedStockChart() {
         const symbol = tickerInput.value.trim().toUpperCase();
-        const purchaseDate = purchaseDateInput.value;
 
-        if (!symbol || !purchaseDate) {
+        if (!symbol) {
             return;
         }
 
-        const chartData = await getChartData(symbol, purchaseDate);
-        renderStockPriceChart(symbol, purchaseDate, chartData);
+        const chartData = await getChartData(symbol, purchaseDateInput.value);
+        renderStockPriceChart(symbol, 'Last 30 Days', chartData);
 
-        console.log(chartData)
+        console.log(chartData);
     }
 
     tickerInput.addEventListener('change', updateSelectedStockChart);
@@ -284,7 +283,7 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
 
     async function showChart(symbol, purchaseDate) {
         const chartData = await getChartData(symbol, purchaseDate);
-        renderStockPriceChart(symbol, purchaseDate, chartData);
+        renderStockPriceChart(symbol, 'Last 30 Days', chartData);
     }
 
     function deleteHolding(id) {
