@@ -3,7 +3,7 @@ import YahooFinance from 'yahoo-finance2';
 const yahooFinance = new YahooFinance();
 
 export default async function handler(req, res) {
-  const { symbol } = String(req.query.symbol || "").trim().toUpperCase();
+  const symbol = String(req.query.symbol || "").trim().toUpperCase();
 
   if (!symbol) {
     return res.status(400).json({ error: 'Symbol is required' });
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
       t: quotes.map((quote) => Math.floor(quote.date.getTime() / 1000)), // Convert to Unix timestamp in seconds
     });
   } catch (error) {
-    console.error('Yahoo Finance chart error for ${symbol}:', error);
+    console.error(`Yahoo Finance chart error for ${symbol}:`, error);
 
     return res.status(500).json({ error: 'Failed to fetch chart data' });
   }
