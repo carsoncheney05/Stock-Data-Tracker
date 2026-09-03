@@ -6,11 +6,26 @@ const sharesInput = document.getElementById('shares');
 const buyPriceInput = document.getElementById('buy-price');
 const purchaseDateInput = document.getElementById('purchase-date');
 const holdingsBody = document.getElementById('holdings-body');
+const rangeButtons = document.querySelectorAll('.range-button');
 
 let stockPriceChart;
 let portfolioChart;
 let searchTimeout;
 let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
+let selectedChartRange = '1m'; // Default chart range
+
+rangeButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        selectedChartRange = button.dataset.range;
+
+        rangeButtons.forEach((rangeButton) => {
+            rangeButton.classList.remove('active');
+        });
+
+    button.classList.add('active');
+    updateSelectedStockChart();
+});
+});
 
     stockSearchInput.addEventListener('input', () => {
         clearTimeout(searchTimeout);
@@ -51,13 +66,19 @@ let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
 
     async function getChartData(symbol, purchaseDate) {
         try {
-            const response = await fetch(
-                `/api/chart?symbol=${encodeURIComponent(symbol)}&purchaseDate=${encodeURIComponent(purchaseDate)}`
-            );
+            const params = new URLSearchParams({ 
+                symbol: symbol, range: selectedChartRange
+            });
+
+            if (purchaseDate) {
+                params.set('purchaseDate', purchaseDate);
+            }
+
+            const response = await fetch(`/api/chart?${params.toString()}`);
             const data = await response.json();
             return data;
         } catch (error) {
-            console.error("Chart error:", error);
+            console.error("Chart data error:", error);
             return null;
         }
     }
