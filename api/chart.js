@@ -1,48 +1,36 @@
+import YahooFinance from 'yahoo-finance2';
+
+const yahooFinance = new YahooFinance();
+
 export default async function handler(req, res) {
-  const symbol = req.query.symbol;
+  const { symbol } = String(req.query.symbol || "").trim().toUpperCase();
 
   if (!symbol) {
-    return res.status(400).json({ error: "Missing symbol" });
-  }
-
-  if (!process.env.ALPHA_VANTAGE_API_KEY) {
-    return res.status(500).json({ error: "Missing ALPHA_VANTAGE_API_KEY on server" });
+    return res.status(400).json({ error: 'Symbol is required' });
   }
 
   try {
-    const response = await fetch(
-      `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=${encodeURIComponent(symbol)}&outputsize=compact&apikey=${process.env.ALPHA_VANTAGE_API_KEY}`
-    );
+    const period1 = new Date();
+    period1.setDate(period1.getDate() - 45); // 45 days ago
 
-    const data = await response.json();
+    const result = await yahooFinance.chart(symbol, {
+      period1,
+      interval: '1d'
+    });
 
-    if (data.Note) {
-      return res.status(429).json({ error: data.Note });
-    }
-
-    if (data["Error Message"]) {
-      return res.status(400).json({ error: data["Error Message"] });
-    }
-
-    const series = data["Time Series (Daily)"];
-
-    if (!series) {
-      return res.status(200).json({ s: "no_data", c: [], t: [] });
-    }
-
-    const entries = Object.entries(series)
-      .sort((a, b) => new Date(a[0]) - new Date(b[0]))
-      .slice(-30);
-
-    const c = entries.map(([, values]) => Number(values["4. close"]));
-    const t = entries.map(([date]) => Math.floor(new Date(date).getTime() / 1000));
+    const quotes = result.quotes
+      .filter((quote) => quote.close !== null) // Filter out quotes with null close values
+      .slice(-30); // Get the last 30 quotes
 
     return res.status(200).json({
-      s: c.length ? "ok" : "no_data",
-      c,
-      t
+      s: quotes.length ? "ok" : "no_data",
+      c: quotes.map((quote) => quote.close),
+      t: quotes.map((quote) => Math.floor(quote.date.getTime() / 1000)), // Convert to Unix timestamp in seconds
     });
   } catch (error) {
-    return res.status(500).json({ error: "Failed to fetch chart data" });
+    console.error('Yahoo Finance chart error for ${symbol}:', error);
+
+    return res.status(500).json({ error: 'Failed to fetch chart data' });
   }
 }
+  
