@@ -2,7 +2,7 @@ import YahooFinance from 'yahoo-finance2';
 
 const yahooFinance = new YahooFinance();
 
-const allowedRanges = ['1d', '1w', '1m', '3m', 'ytd', '1y', 'purchase'];
+const allowedRanges = ['1d', '1w', '1m', '3m', '1y', 'purchase'];
 
 export default async function handler(req, res) {
   const symbol = String(req.query.symbol || "").trim().toUpperCase();
@@ -38,8 +38,8 @@ export default async function handler(req, res) {
       period1.setUTCDate(period1.getUTCDate() - 90);
       interval = '1d';
       break;
-    case 'ytd':
-      period1 = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+    case '1y':
+      period1.setUTCDate(period1.getUTCDate() - 365);
       interval = '1d';
       break;
     case 'purchase':
