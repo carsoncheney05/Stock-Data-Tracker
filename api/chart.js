@@ -23,7 +23,7 @@ export default async function handler(req, res) {
 
   switch (range) {
     case '1d':
-      period1.setUTCDate(period1.getUTCDate() - 1);
+      period1.setUTCDate(period1.getUTCDate() - 5);
       interval = '5m';
       break;
     case '1w':
@@ -31,12 +31,11 @@ export default async function handler(req, res) {
       interval = '1h';
       break;
     case '1m':
-      period1.setUTCMonth(period1.getUTCMonth() - 1);
+      period1.setUTCDate(period1.getUTCDate() - 30);
       interval = '1d';
       break;
     case 'ytd':
-      period1.setUTCDate(period1.getUTCDate() - period1.getUTCDay());
-      period1.setUTCFullYear(period1.getUTCFullYear(), 0, 1);
+      period1 = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
       interval = '1d';
       break;
     case 'purchase':
@@ -45,7 +44,7 @@ export default async function handler(req, res) {
       }
       period1 = new Date(`${purchaseDate}T00:00:00Z`);
       
-      if (Number.isNaN(period1)) {
+      if (Number.isNaN(period1.getTime()) || period1 > now) {
         return res.status(400).json({ error: 'Invalid purchase date' });
       }
 
