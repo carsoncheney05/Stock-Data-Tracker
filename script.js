@@ -87,7 +87,7 @@ rangeButtons.forEach(button => {
 
     function renderStockPriceChart(symbol, purchaseDate, chartData) {
         const ctx = document.getElementById('stock-price-chart');
-        const rangeLabels = {'1d': 'Latest Trading Day', '1w': 'Past Week', '1m': 'Past 30 Days', '3m': 'Past 90 Days', '1 Year': 'Past Year', purchase: `Since ${purchaseDate}`};
+        const rangeLabels = {'1d': 'Latest Trading Day', '1w': 'Past Week', '1m': 'Past 30 Days', '3m': 'Past 90 Days', '1y': 'Past Year', purchase: `Since ${purchaseDate}`};
 
         const range = chartData?.range || selectedChartRange;
         const chartLabel = `${symbol} - ${rangeLabels[range]}`;
