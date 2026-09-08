@@ -112,7 +112,13 @@ rangeButtons.forEach(button => {
 
         const labels = chartData.t.map((timestamp) => {
             const date = new Date(timestamp * 1000);
-            return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+
+            if (range === '1d') {
+                return date.toLocaleTimeString('en-US', {
+                    hour: 'numeric', minute: '2-digit'
+                });
+            }
+            return date.toLocaleDateString('en-US');
         });
 
         const prices = chartData.c;
@@ -135,9 +141,22 @@ rangeButtons.forEach(button => {
                     }
                 },
                 scales: {
-                    x: {
-                        ticks: {
-                            maxTicksLimit: 10
+                  x: {
+                    ticks: {
+                        autoSkip: range !== '1d',
+                        maxTicksLimit: 10,
+                            callback: function(value) {
+                                if (range === '1d') {
+                                    const date = new Date(chartData.t[value] * 1000);
+
+                                    // Label the first point and each whole hour.
+                                    if (value !== 0 && date.getMinutes() !== 0) {
+                                        return null;
+                                    }
+                                }
+
+                                return this.getLabelForValue(value);
+                            }
                         }
                     }
                 }
