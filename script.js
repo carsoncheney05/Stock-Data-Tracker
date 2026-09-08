@@ -11,6 +11,8 @@ const rangeButtons = document.querySelectorAll('.range-button');
 let stockPriceChart;
 let portfolioChart;
 let searchTimeout;
+let chartSelection = { symbol: '', purchaseDate: ''};
+let latestChartRequest = 0;
 let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
 let selectedChartRange = '1m'; // Default chart range
 
@@ -23,7 +25,7 @@ rangeButtons.forEach(button => {
         });
 
     button.classList.add('active');
-    updateSelectedStockChart();
+    showChart(chartSelection.symbol, chartSelection.purchaseDate);
 });
 });
 
@@ -85,6 +87,10 @@ rangeButtons.forEach(button => {
 
     function renderStockPriceChart(symbol, purchaseDate, chartData) {
         const ctx = document.getElementById('stock-price-chart');
+        const rangeLabels = {'1d': 'Latest Trading Day', '1w': 'Past Week', '1m': 'Past 30 Days', '3m': 'Past 90 Days', '1 Year': 'Past Year', purchase: `Since ${purchaseDate}`};
+
+        const range = chartData?.range || selectedChartRange;
+        const chartLabel = `${symbol} - ${rangeLabels[range]}`;
 
         if (stockPriceChart) {
             stockPriceChart.destroy();
@@ -96,8 +102,8 @@ rangeButtons.forEach(button => {
                 data: {
                     labels: ['No data'],
                     datasets: [{
-                        label: `${symbol} Last 30 Days`,
-                        data: [0]
+                        label: chartLabel,
+                        data: []
                     }]
                 }
             });
@@ -116,7 +122,7 @@ rangeButtons.forEach(button => {
             data: {
                 labels,
                 datasets: [{
-                    label: `${symbol} Last 30 Days`,
+                    label: chartLabel,
                     data: prices,
                     tension: 0.2
                 }]
@@ -161,6 +167,8 @@ rangeButtons.forEach(button => {
         stockSearchInput.value = stock.description || stock.displaySymbol;
         searchResults.innerHTML = "";
         searchResults.style.display = "none";
+
+        updateSelectedStockChart();
     });
 
             searchResults.appendChild(item);
@@ -169,17 +177,11 @@ rangeButtons.forEach(button => {
         searchResults.style.display = "block";
     }
 
-    async function updateSelectedStockChart() {
-        const symbol = tickerInput.value.trim().toUpperCase();
-
-        if (!symbol) {
-            return;
-        }
-
-        const chartData = await getChartData(symbol, purchaseDateInput.value);
-        renderStockPriceChart(symbol, 'Last 30 Days', chartData);
-
-        console.log(chartData);
+    function updateSelectedStockChart() {
+        return showChart(
+            tickerInput.value.trim().toUpperCase(),
+            purchaseDateInput.value
+        );
     }
 
     tickerInput.addEventListener('change', updateSelectedStockChart);
@@ -303,9 +305,32 @@ rangeButtons.forEach(button => {
     }
 
     async function showChart(symbol, purchaseDate) {
-        const chartData = await getChartData(symbol, purchaseDate);
-        renderStockPriceChart(symbol, 'Last 30 Days', chartData);
+        chartSelection = { symbol, purchaseDate: purchaseDate || ''};
+
+        const requestId = ++latestChartRequest;
+
+        if (selectedChartRange === 'purchase' && !chartSelection.purchaseDate) {
+            selectedChartRange = '1m';
+        }
+
+        rangeButtons.forEach(button => {
+            const range = button.dataset.range;
+            const isActive = range === selectedChartRange;
+
+            button.classList.toggle('active', isActive);
+            button.setAttribute('aria-pressed', String(isActive));
+            button.disabled = range === 'purchase' && !chartSelection.purchaseDate;
+        });
+
+        if (!symbol) return;
+
+        const chartData = await getChartData(symbol, chartSelection.purchaseDate);
+
+        if (requestId !== latestChartRequest) return;
+        renderStockPriceChart(symbol, purchaseDate, chartData);
     }
+
+
 
     function deleteHolding(id) {
         holdings = holdings.filter(holding => holding.id !== id);
@@ -313,4 +338,6 @@ rangeButtons.forEach(button => {
         renderHoldings();
     }
 
+
+updateSelectedStockChart();
 renderHoldings();

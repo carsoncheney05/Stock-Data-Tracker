@@ -54,7 +54,7 @@ export default async function handler(req, res) {
 
       const holdingAgeinDays = (now.getTime() - period1.getTime()) / (1000 * 60 * 60 * 24);
 
-      interval = holdingAgeinDays > 730 ? '1w' : '1d';
+      interval = holdingAgeinDays > 730 ? '1wk' : '1d';
       break;
   }
 
