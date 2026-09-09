@@ -15,6 +15,13 @@ let chartSelection = { symbol: '', purchaseDate: ''};
 let latestChartRequest = 0;
 let holdings = JSON.parse(localStorage.getItem('holdings')) || [];
 let selectedChartRange = '1m'; // Default chart range
+let latestSearchRequest = 0;
+
+function closeSearchResults() {
+    clearTimeout(searchTimeout);
+    latestSearchRequest++;
+    searchResults.classList.remove('is-open');
+}
 
 rangeButtons.forEach(button => {
     button.addEventListener('click', () => {
@@ -26,33 +33,48 @@ rangeButtons.forEach(button => {
 
     button.classList.add('active');
     showChart(chartSelection.symbol, chartSelection.purchaseDate);
-});
-});
-
-    stockSearchInput.addEventListener('input', () => {
-        clearTimeout(searchTimeout);
-            const query = stockSearchInput.value.trim();
-            searchTimeout = setTimeout(() => {
-                searchStocks(query);
-            }, 300);
+        });
     });
+        stockSearchInput.addEventListener('input', () => {
+            clearTimeout(searchTimeout);
 
-    async function searchStocks(query) {
-    if (query.length < 2) {
-        searchResults.innerHTML = "";
-        searchResults.style.display = "none";
-        return;
-    }
+            const query = stockSearchInput.value.trim();
+            const requestId = ++latestSearchRequest;
 
-    try {
-        const response = await fetch(`/api/search-stock?q=${encodeURIComponent(query)}`);
-        const data = await response.json();
-        renderSearchResults(data.result || []);
-    } catch (error) {
-        console.error("Search error:", error);
-        searchResults.innerHTML = "";
-        searchResults.style.display = "none";
-    }
+            if (query.length < 2) {
+                closeSearchResults();
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                searchStocks(query, requestId);
+            }, 200);
+        });
+
+    async function searchStocks(query, requestId) {
+        try {
+            const response = await fetch(
+                `/api/search-stock?q=${encodeURIComponent(query)}`
+            );
+
+            if (!response.ok) {
+                throw new Error(`Search failed: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // Ignore responses for an older search.
+            if (requestId !== latestSearchRequest) return;
+
+            renderSearchResults(
+                Array.isArray(data.result) ? data.result : []
+            );
+        } catch (error) {
+            if (requestId !== latestSearchRequest) return;
+
+            console.error('Search error:', error);
+            closeSearchResults();
+        }
     }
 
     async function getQuote(symbol) {
@@ -165,36 +187,40 @@ rangeButtons.forEach(button => {
     }
 
     function renderSearchResults(results) {
-        searchResults.innerHTML = "";
+    if (!results.length) {
+        closeSearchResults();
+        return;
+    }
 
-        if (!results.length) {
-            searchResults.style.display = "none";
-            return;
-        }
+    const rows = results.slice(0, 8).map((stock) => {
+        const item = document.createElement('div');
+        item.className = 'search-result-item';
 
-        results.slice(0, 8).forEach(stock => {
-            const item = document.createElement("div");
-            item.className = 'search-result-item';
+        const name = document.createElement('div');
+        name.className = 'search-name';
+        name.textContent =
+            stock.description || stock.displaySymbol || stock.symbol;
 
-            item.innerHTML = `
-                <div class="search-name">${stock.description || stock.displaySymbol}</div>
-                <div class="search-meta">${stock.symbol}</div>
-            `;
+        const symbol = document.createElement('div');
+        symbol.className = 'search-meta';
+        symbol.textContent = stock.symbol;
 
-    item.addEventListener('click', () => {
-        tickerInput.value = stock.symbol;
-        stockSearchInput.value = stock.description || stock.displaySymbol;
-        searchResults.innerHTML = "";
-        searchResults.style.display = "none";
+        item.append(name, symbol);
 
-        updateSelectedStockChart();
-    });
+        item.addEventListener('click', () => {
+            tickerInput.value = stock.symbol;
+            stockSearchInput.value = name.textContent;
 
-            searchResults.appendChild(item);
+            closeSearchResults();
+            updateSelectedStockChart();
         });
 
-        searchResults.style.display = "block";
-    }
+        return item;
+    });
+
+    searchResults.replaceChildren(...rows);
+    searchResults.classList.add('is-open');
+}
 
     function updateSelectedStockChart() {
         return showChart(
