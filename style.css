@@ -189,10 +189,15 @@ h1, h2 {
     margin-top: 30px;
 }
 
+.allocation-chart-frame {
+    position: relative;
+    width: 100%;
+    max-width: 320px;
+    height: 280px;
+    margin: 16px auto 0;
+}
+
 #portfolio-chart {
-    max-width: 500px;
-    max-height: 500px;
-    margin: 0 auto;
     display: block;
 }
 

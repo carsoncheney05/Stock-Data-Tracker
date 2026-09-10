@@ -233,33 +233,81 @@ rangeButtons.forEach(button => {
     purchaseDateInput.addEventListener('change', updateSelectedStockChart);
         
     function renderPortfolioChart(allocationMap) {
-        const ctx = document.getElementById('portfolio-chart');
+        const canvas = document.getElementById('portfolio-chart');
+        const frame = canvas.parentElement;
+        const status = document.getElementById('allocation-status');
 
-        if (portfolioChart) {
-            portfolioChart.destroy();
-        }
+        const entries = Object.entries(allocationMap).filter(
+            ([, value]) => Number.isFinite(value) && value > 0
+        );
 
-        const labels = Object.keys(allocationMap);
-        const values = Object.values(allocationMap);
+        if (entries.length === 0) {
+            if (portfolioChart) {
+                portfolioChart.destroy();
+                portfolioChart = null;
+            }
 
-        if (labels.length === 0) {
+            frame.hidden = true;
+            status.hidden = false;
+            status.textContent = holdings.length === 0
+                ? 'Add a holding to see your allocation.'
+                : 'No current market values available to chart.';
+
             return;
         }
 
-        portfolioChart = new Chart(ctx, {
-            type: 'pie',
+        frame.hidden = false;
+        status.hidden = true;
+
+        const labels = entries.map(([symbol]) => symbol);
+        const values = entries.map(([, value]) => value);
+
+        // Update the existing chart when holdings change.
+        if (portfolioChart) {
+            portfolioChart.data.labels = labels;
+            portfolioChart.data.datasets[0].data = values;
+            portfolioChart.update();
+            return;
+        }
+
+        portfolioChart = new Chart(canvas, {
+            type: 'doughnut',
             data: {
                 labels,
                 datasets: [{
-                    label: 'Portfolio Allocation',
-                    data: values
+                    label: 'Current Market Value',
+                    data: values,
+                    backgroundColor: [
+                        '#2563eb',
+                        '#7c3aed',
+                        '#0891b2',
+                        '#059669',
+                        '#d97706',
+                        '#db2777'
+                    ],
+                    borderColor: '#ffffff',
+                    borderWidth: 3,
+                    hoverOffset: 5
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                animation: window.matchMedia(
+                    '(prefers-reduced-motion: reduce)'
+                ).matches ? false : {
+                    duration: 500,
+                    easing: 'easeOutQuart'
+                },
                 plugins: {
                     legend: {
-                        position: 'bottom'
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 16,
+                            font: { size: 14 }
+                        }
                     }
                 }
             }
