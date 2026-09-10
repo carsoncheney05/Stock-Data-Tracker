@@ -89,24 +89,23 @@ rangeButtons.forEach(button => {
     }
 
     async function getChartData(symbol, purchaseDate) {
-        try {
-            const params = new URLSearchParams({ 
-                symbol: symbol, range: selectedChartRange
-            });
+        const params = new URLSearchParams({
+            symbol,
+            range: selectedChartRange
+        });
 
-            if (purchaseDate) {
-                params.set('purchaseDate', purchaseDate);
-            }
-
-            const response = await fetch(`/api/chart?${params.toString()}`);
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error("Chart data error:", error);
-            return null;
+        if (purchaseDate) {
+            params.set('purchaseDate', purchaseDate);
         }
-    }
 
+        const response = await fetch('/api/chart?' + params.toString());
+        const data = await response.json();
+
+        if (!response.ok || data.error) {
+            throw new Error(data.error || 'Chart request failed.');
+        }
+        return data;
+    }
     function renderStockPriceChart(symbol, purchaseDate, chartData) {
         const ctx = document.getElementById('stock-price-chart');
         const rangeLabels = {'1d': 'Latest Trading Day', '1w': 'Past Week', '1m': 'Past 30 Days', '3m': 'Past 90 Days', '1y': 'Past Year', purchase: `Since ${purchaseDate}`};
@@ -152,11 +151,24 @@ rangeButtons.forEach(button => {
                 datasets: [{
                     label: chartLabel,
                     data: prices,
-                    tension: 0.2
+                    tension: 0.2,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                    borderWidth: 2,
+                    fill: true,
+                    pointRadius: prices.length === 1 ? 3 : 0,
+                    pointHoverRadius: 5
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
+                animation: window.matchMedia(
+                    '(prefers-reduced-motion: reduce)'
+                ).matches ? false : {
+                    duration: 650,
+                    easing: 'easeOutQuart'
+                },
                 plugins: {
                     legend: {
                         display: true
@@ -398,8 +410,12 @@ rangeButtons.forEach(button => {
     }
 
     async function showChart(symbol, purchaseDate) {
-        chartSelection = { symbol, purchaseDate: purchaseDate || ''};
+        const panel = document.getElementById('stock-chart-panel');
+        const status = document.getElementById('stock-chart-status');
+        const frame = document.getElementById('stock-chart-frame');
 
+        symbol = String(symbol || '').trim().toUpperCase();
+        chartSelection = { symbol, purchaseDate: purchaseDate || '' };
         const requestId = ++latestChartRequest;
 
         if (selectedChartRange === 'purchase' && !chartSelection.purchaseDate) {
@@ -407,20 +423,68 @@ rangeButtons.forEach(button => {
         }
 
         rangeButtons.forEach(button => {
-            const range = button.dataset.range;
-            const isActive = range === selectedChartRange;
+            const active = button.dataset.range === selectedChartRange;
 
-            button.classList.toggle('active', isActive);
-            button.setAttribute('aria-pressed', String(isActive));
-            button.disabled = range === 'purchase' && !chartSelection.purchaseDate;
+            button.classList.toggle('active', active);
+            button.setAttribute('aria-pressed', String(active));
+            button.disabled = button.dataset.range === 'purchase'
+                && !chartSelection.purchaseDate;
         });
 
-        if (!symbol) return;
+        panel.inert = !symbol;
+        panel.classList.toggle('is-open', Boolean(symbol));
 
-        const chartData = await getChartData(symbol, chartSelection.purchaseDate);
+        if (!symbol) {
+            panel.classList.remove('is-loading');
+            frame.setAttribute('aria-busy', 'false');
+            frame.style.visibility = 'hidden';
+            status.textContent = '';
+            return;
+        }
 
-        if (requestId !== latestChartRequest) return;
-        renderStockPriceChart(symbol, purchaseDate, chartData);
+        // Open the panel before waiting for the stock data.
+        panel.classList.add('is-loading');
+        frame.setAttribute('aria-busy', 'true');
+        status.classList.remove('is-error');
+        status.textContent = 'Loading ' + symbol + '…';
+
+        try {
+            const chartData = await getChartData(symbol, purchaseDate);
+
+            // Ignore a response if another selection has replaced it.
+            if (requestId !== latestChartRequest) return;
+
+            if (!chartData
+                || !Array.isArray(chartData.c)
+                || !Array.isArray(chartData.t)
+                || chartData.c.length !== chartData.t.length
+                || !chartData.c.every(Number.isFinite)
+                || !chartData.t.every(Number.isFinite)) {
+                throw new Error('Invalid chart response.');
+            }
+
+            if (chartData.c.length === 0) {
+                frame.style.visibility = 'hidden';
+                status.textContent = 'No prices available for this range.';
+                return;
+            }
+
+            frame.style.visibility = 'visible';
+            renderStockPriceChart(symbol, purchaseDate, chartData);
+            status.textContent = '';
+        } catch (error) {
+            if (requestId !== latestChartRequest) return;
+
+            console.error('Chart error:', error);
+            frame.style.visibility = 'hidden';
+            status.classList.add('is-error');
+            status.textContent = 'Could not load ' + symbol + '. Please try again.';
+        } finally {
+            if (requestId === latestChartRequest) {
+                panel.classList.remove('is-loading');
+                frame.setAttribute('aria-busy', 'false');
+            }
+        }
     }
 
 
