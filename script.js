@@ -495,6 +495,123 @@ rangeButtons.forEach(button => {
         renderHoldings();
     }
 
+    function showMarketMessage(containerId, message) {
+    const text = document.createElement('p');
+    text.className = 'market-empty';
+    text.textContent = message;
+
+    document.getElementById(containerId).replaceChildren(text);
+}
+
+function renderMarketList(containerId, stocks) {
+    const container = document.getElementById(containerId);
+
+    if (stocks.length === 0) {
+        showMarketMessage(containerId, 'No results available.');
+        return;
+    }
+
+    const rows = stocks.map(stock => {
+        const row = document.createElement('div');
+        row.className = 'market-mover';
+
+        const details = document.createElement('div');
+
+        const symbol = document.createElement('strong');
+        symbol.textContent = stock.symbol;
+
+        const name = document.createElement('span');
+        name.className = 'market-mover-name';
+        name.textContent = stock.name;
+        name.title = stock.name;
+
+        details.append(symbol, name);
+
+        const values = document.createElement('div');
+        values.className = 'market-mover-values';
+
+        const change = document.createElement('span');
+        change.className = 'market-change '
+            + (stock.changePercent > 0 ? 'gain' : 'loss');
+
+        change.textContent = (stock.changePercent > 0 ? '+' : '')
+            + stock.changePercent.toFixed(2) + '%';
+
+        const price = document.createElement('span');
+        price.className = 'market-mover-price';
+
+        price.textContent = Number.isFinite(stock.price)
+            ? stock.price.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: stock.price < 1 ? 4 : 2
+            }) + ' ' + stock.currency
+            : 'Price unavailable';
+
+        values.append(change, price);
+        row.append(details, values);
+
+        return row;
+    });
+
+    container.replaceChildren(...rows);
+
+    const latestQuote = Math.max(
+        ...stocks.map(stock => stock.quoteTime || 0)
+    );
+
+    if (latestQuote > 0) {
+        const timestamp = document.createElement('p');
+        timestamp.className = 'market-meta';
+
+        timestamp.textContent = 'Latest quote: '
+            + new Date(latestQuote * 1000).toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                timeZoneName: 'short'
+            });
+
+        container.append(timestamp);
+    }
+}
+
+async function loadMarketMovers() {
+    const ids = ['top-gainers', 'top-losers'];
+
+    ids.forEach(id => {
+        showMarketMessage(id, 'Loading…');
+        document.getElementById(id).setAttribute('aria-busy', 'true');
+    });
+
+    try {
+        const response = await fetch('/api/market-movers');
+        const data = await response.json();
+
+        if (!response.ok
+            || !Array.isArray(data.gainers)
+            || !Array.isArray(data.losers)) {
+            throw new Error(data.error || 'Invalid market response.');
+        }
+
+        renderMarketList('top-gainers', data.gainers);
+        renderMarketList('top-losers', data.losers);
+    } catch (error) {
+        console.error('Market movers error:', error);
+
+        ids.forEach(id =>
+            showMarketMessage(
+                id,
+                'Could not load movers. Refresh to try again.'
+            )
+        );
+    } finally {
+        ids.forEach(id =>
+            document.getElementById(id).setAttribute('aria-busy', 'false')
+        );
+    }
+}
 
 updateSelectedStockChart();
 renderHoldings();
+loadMarketMovers();

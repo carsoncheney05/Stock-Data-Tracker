@@ -312,3 +312,60 @@ th, td {
         transition: none;
     }
 }
+
+.market-mover {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 0;
+}
+
+.market-mover + .market-mover {
+    border-top: 1px solid #edf1f7;
+}
+
+.market-mover > div {
+    min-width: 0;
+}
+
+.market-mover-name {
+    display: block;
+    margin-top: 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.market-mover-values {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.market-change {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 650;
+}
+
+.market-change.gain {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.market-change.loss {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.market-mover-price {
+    display: block;
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 0.875rem;
+}
